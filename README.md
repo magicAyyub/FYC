@@ -37,8 +37,8 @@ This is a PyTorch implementation of a deep convolutional neural network model tr
 Clone this repository into your local drive.
 
 ```sh
-git clone https://github.com/ImperialCollegeLondon/recode-perceptions.git
-cd recode-perceptions
+git clone https://github.com/magicAyyub/FYC.git
+cd FYC
 ```
 
 ### Setting up a virtual environment
