@@ -1,0 +1,22 @@
+[project]
+name = "fyc"
+version = "0.1.0"
+description = "Find Your Course TD + Exercices"
+readme = "README.md"
+requires-python = ">=3.9.20"
+dependencies = [
+    "pytest",
+    "pre-commit",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "torchinfo",
+    "numpy<2.0",
+    "pandas",
+    "matplotlib",
+    "tqdm",
+    "wandb>=0.21.0",
+    "ipykernel>=6.30.1",
+    "jupyter>=1.1.1",
+    "notebook>=7.4.5",
+]

@@ -1,0 +1,10 @@
+construction_site
+crosswalk
+highway
+house
+park
+residential_neighborhood
+shopfront
+street
+slum
+yard

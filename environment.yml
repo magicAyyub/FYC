@@ -1,0 +1,17 @@
+name: fyc_env
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy<2.0  # Pin NumPy to version < 2.0 to avoid np.float_ issues
+  - torchaudio
+  # - cudatoolkit
+  - pytorch
+  - torchvision
+  - torchinfo
+  - wandb>=0.21.0  # Updated to fix Sentry deprecation warning
+  - tqdm
+  - matplotlib
+  - pandas
