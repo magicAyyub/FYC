@@ -15,11 +15,20 @@ interface Rectangle {
   width: number
   height: number
   label: string
+  confidence?: number
+}
+
+interface DetectionResponse {
+  rectangles: Rectangle[]
+  timestamp: string
+  fps: number
+  model: string
 }
 
 export default function CameraPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const wsRef = useRef<WebSocket | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
   const [rectangle, setRectangle] = useState<Rectangle>({ x: 20, y: 20, width: 120, height: 120, label: "Scene" })
@@ -32,6 +41,8 @@ export default function CameraPage() {
   const [confidence, setConfidence] = useState<number>(75)
   const [showLabels, setShowLabels] = useState<boolean>(true)
   const [updateInterval, setUpdateInterval] = useState<number>(500)
+  const [wsConnected, setWsConnected] = useState<boolean>(false)
+  const [backendError, setBackendError] = useState<string>("")
 
   useEffect(() => {
     const startCamera = async () => {
@@ -94,52 +105,106 @@ export default function CameraPage() {
     }
   }, [facingMode])
 
+  // Connexion WebSocket
   useEffect(() => {
-    if (!isRunning) {
-      setFps(0)
+    const connectWebSocket = () => {
+      try {
+        const ws = new WebSocket('ws://localhost:8000/ws/detect')
+        wsRef.current = ws
+
+        ws.onopen = () => {
+          console.log('WebSocket connecté')
+          setWsConnected(true)
+          setBackendError("")
+        }
+
+        ws.onmessage = (event) => {
+          try {
+            const response: DetectionResponse = JSON.parse(event.data)
+            if (response.rectangles && response.rectangles.length > 0) {
+              setRectangle(response.rectangles[0])
+              setFps(response.fps)
+            }
+          } catch (err) {
+            console.error('Erreur parsing message WebSocket:', err)
+          }
+        }
+
+        ws.onclose = () => {
+          console.log('WebSocket déconnecté')
+          setWsConnected(false)
+          setBackendError("Connexion au backend perdue")
+          // Tentative de reconnexion après 3 secondes
+          setTimeout(connectWebSocket, 3000)
+        }
+
+        ws.onerror = (error) => {
+          console.error('Erreur WebSocket:', error)
+          setBackendError("Impossible de se connecter au backend (port 8000)")
+          setWsConnected(false)
+        }
+      } catch (err) {
+        console.error('Erreur création WebSocket:', err)
+        setBackendError("Erreur de connexion WebSocket")
+      }
+    }
+
+    connectWebSocket()
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [])
+
+  // Gestion du démarrage/arrêt de la détection via WebSocket
+  useEffect(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       return
     }
 
-    let frameCount = 0
-    let lastTime = Date.now()
+    if (isRunning && containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth
+      const containerHeight = containerRef.current.clientHeight
 
-    const interval = setInterval(() => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth
-        const containerHeight = containerRef.current.clientHeight
-        const rectWidth = 80 + Math.random() * 100
-        const rectHeight = 80 + Math.random() * 100
-
-        const scenesByModel: Record<string, string[]> = {
-          "scene-v1": ["Indoor", "Outdoor", "Office", "Street", "Room", "Kitchen"],
-          places365: ["Restaurant", "Bedroom", "Living Room", "Park", "Beach", "Forest"],
-          "urban-v2": ["Street", "Building", "Parking", "Sidewalk", "Crosswalk", "Plaza"],
-          "nature-v1": ["Forest", "Mountain", "Lake", "Field", "Garden", "Sky"],
-        }
-
-        const scenes = scenesByModel[selectedModel] || scenesByModel["scene-v1"]
-        const randomScene = scenes[Math.floor(Math.random() * scenes.length)]
-
-        setRectangle({
-          x: Math.random() * (containerWidth - rectWidth),
-          y: Math.random() * (containerHeight - rectHeight),
-          width: rectWidth,
-          height: rectHeight,
-          label: randomScene,
-        })
-
-        frameCount++
-        const currentTime = Date.now()
-        if (currentTime - lastTime >= 1000) {
-          setFps(Math.round((frameCount * 1000) / updateInterval))
-          frameCount = 0
-          lastTime = currentTime
-        }
+      const message = {
+        type: "start",
+        width: containerWidth,
+        height: containerHeight,
+        model: selectedModel,
+        interval: updateInterval
       }
-    }, updateInterval)
 
-    return () => clearInterval(interval)
-  }, [isRunning, updateInterval, selectedModel])
+      wsRef.current.send(JSON.stringify(message))
+    } else {
+      const message = { type: "stop" }
+      wsRef.current.send(JSON.stringify(message))
+      setFps(0)
+    }
+  }, [isRunning, selectedModel, updateInterval])
+
+  // Mise à jour de la configuration WebSocket
+  useEffect(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isRunning) {
+      return
+    }
+
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth
+      const containerHeight = containerRef.current.clientHeight
+
+      const message = {
+        type: "config",
+        width: containerWidth,
+        height: containerHeight,
+        model: selectedModel,
+        interval: updateInterval
+      }
+
+      wsRef.current.send(JSON.stringify(message))
+    }
+  }, [selectedModel, updateInterval])
 
   const switchCamera = () => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"))
@@ -168,6 +233,14 @@ export default function CameraPage() {
               <span className="text-xs text-muted-foreground md:text-sm">{fps} FPS</span>
             </div>
           )}
+          
+          <div className="flex items-center gap-2 rounded-lg bg-muted px-2 py-1 md:px-3 md:py-1.5">
+            <div className={`h-2 w-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-xs text-muted-foreground md:text-sm">
+              {wsConnected ? 'Backend' : 'Offline'}
+            </span>
+          </div>
+          
           <Button
             variant="ghost"
             size="icon"
@@ -203,13 +276,18 @@ export default function CameraPage() {
                 </div>
               )}
 
-              {error && (
+              {(error || backendError) && (
                 <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-lg bg-destructive/90 px-4 py-2 text-xs text-destructive-foreground backdrop-blur-sm md:px-6 md:py-3 md:text-sm">
                   <div className="text-center">
-                    <div className="font-medium">{error}</div>
-                    {error.includes("HTTPS") && (
+                    <div className="font-medium">{error || backendError}</div>
+                    {error && error.includes("HTTPS") && (
                       <div className="mt-1 text-xs opacity-90">
                         Pour mobile: utilisez https://192.168.1.79:3000
+                      </div>
+                    )}
+                    {backendError && (
+                      <div className="mt-1 text-xs opacity-90">
+                        Assurez-vous que le backend est démarré sur le port 8000
                       </div>
                     )}
                   </div>
@@ -356,6 +434,12 @@ export default function CameraPage() {
                       <span className="text-muted-foreground">Statut</span>
                       <span className={`font-medium ${isRunning ? "text-green-500" : "text-muted-foreground"}`}>
                         {isRunning ? "Actif" : "Inactif"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
+                      <span className="text-muted-foreground">Backend</span>
+                      <span className={`font-medium ${wsConnected ? "text-green-500" : "text-red-500"}`}>
+                        {wsConnected ? "Connecté" : "Déconnecté"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
