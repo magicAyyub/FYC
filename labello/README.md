@@ -1,4 +1,28 @@
-# Vision AI - Étape 2 : Backend Connecté
+# Roadmap Labello
+
+Étape 1 – Prototype frontend seul
+	•	Vidéo en temps réel.
+	•	Overlay rectangle (position random simulée).
+	•	Switch avant/arrière caméra.
+
+Étape 2 – Connexion backend dummy
+	•	Frontend interroge FastAPI pour récupérer rectangle factice.
+	•	Communication via WebSocket pour simuler le temps réel.
+
+Étape 3 – IA basique
+	•	Backend héberge un modèle PyTorch simple (ex. YOLOv5 pré-entraîné).
+	•	Renvoie coordonnées de bounding boxes.
+
+Étape 4 – Version avancée
+	•	Optimisation latence.
+	•	Multi-rectangle, labels.
+	•	Paramètres utilisateur (choix caméra, seuil de détection, etc.).
+
+# Etape 1 – Prototype frontend seul
+Done.
+
+
+## Vision AI - Étape 2 : Backend Connecté
 
 Application de détection de scènes en temps réel avec backend FastAPI et frontend Next.js.
 
