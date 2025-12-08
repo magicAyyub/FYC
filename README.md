@@ -1,78 +1,78 @@
-# Find Your Course TD + Exercices
+# Real-Time Scene Labeling for Autonomous Vehicles
 
-## Description
+BiSeNetV2-based semantic segmentation for real-time scene understanding in autonomous driving scenarios, trained on the Cityscapes dataset.
 
-This is a PyTorch implementation of a deep convolutional neural network model trained on Places365 data. The model is trained on a subset of 100K images which have outcome labels that are associated to factors which are relevant for environmental health.
+## Project Overview
 
-📌 Take a look `Material` folder after reading this README, there is where your journey begins !
+This project implements real-time semantic segmentation using BiSeNetV2, a state-of-the-art model designed specifically for autonomous driving applications. The model segments road scenes into 19 semantic classes including roads, vehicles, pedestrians, and infrastructure.
 
-## Learning Outcomes
+cityscapes : leftImg8bit & gtFine
 
-- Be aware of different types of Computer Vision tasks
-- Load an image dataset in PyTorch
-- Be able to explain what a convolutional layer does and how it's different from a fully-connected layer
-- Identify different components of a CNN
-- Load a pre-trained model in PyTorch
-- Be able to use PyTorch to train a model on a dataset
-- Iterate on design choices for model training
+### Key Features
+- Real-time Performance: 12.8MB model optimized for speed
+- 19 Semantic Classes: Comprehensive scene understanding
+- Pretrained Model: Ready-to-use weights from Kaggle
+- MPS/CUDA Support: GPU acceleration on macOS and Linux
+- Easy Integration: Simple Python API for inference
 
-## Requirements
+## Quick Start
 
-### Academic
-
-- Basic familiarity with Python & basic programming skills is required 
-- Familiarity with Jupyter Notebooks is recommended 
-- Curiosity and willingness to learn !
-
-### System
-
-| Program                                                    | Version                  |
-| ---------------------------------------------------------- | ------------------------ |
-| [Python](https://www.python.org/downloads/)                | >= 3.9                   |
-| [Miniconda or anaconda](https://www.anaconda.com/products/distribution) | latest                   |
-
-
-## Getting started
-
-Clone this repository into your local drive.
-
-```sh
-git clone https://github.com/magicAyyub/FYC.git
-cd FYC
+### Installation
+```bash
+# Install dependencies
+uv sync
 ```
 
-### Setting up a virtual environment
 
-We will set up a virtual environment for running our scripts. In this case, installing specific package versions will not interfere with other programmes we run locally as the environment is contained. Initially, let's set up a virtual environment:
+### Run Inference
 
-`If you have cuda gpu on your machine, decomment line 10 in environment.yml`
+**Real-time Webcam:**
+```bash
+# Use built-in webcam
+uv run python realtime_inference.py --mode webcam
 
-```sh
-conda env create -f environment.yml
+# Use iPhone as webcam (with Camo or Continuity Camera)
+uv run python realtime_inference.py --mode webcam --camera 2
 ```
 
-This will create a new folder for the virtual environment named `perceptions` in your repository. We activate this environment by running
-
-```sh
-conda activate fyc_env
+**Process Video:**
+```bash
+uv run python realtime_inference.py --mode video --input video.mp4 --output result.mp4
 ```
 
-All the dependencies are installed along with the virtual environment. We will manually install the development tools since we do not need those dependencies when we export to HPC and create a virtual environment there.
-
-### Setting up the development virtual environment
-
-The `pytest` and pre-commit module is required for running tests and formatting. This can be installed by running:
-
-```sh
-conda install --file requirements-dev.txt
+**Live Stream (RTSP/RTMP):**
+```bash
+uv run python realtime_inference.py --mode stream --input rtsp://localhost:8554/mystream
 ```
 
-Now run the tests below to make sure everything is set up correctly. Then, proceed to the video.
-
-### Testing
-
-To run all tests, install `pytest`. After installing, run
-
-```sh
-pytest tests/ -v
+**Single Image:**
+```bash
+uv run python inference.py <path_to_image>
 ```
+
+**Batch Processing:**
+```bash
+uv run python inference.py
+```
+
+
+## Getting Pretrained Model
+
+1. Visit: https://www.kaggle.com/code/agampy/adversarial-patch-baseline/notebook
+2. Download the BiSeNetV2 pretrained model
+3. Place in: `pretrained_models/bisenetv2_cityscapes.pth`
+
+
+## References
+
+- Kaggle Notebook: [Adversarial Patch Baseline](https://www.kaggle.com/code/agampy/adversarial-patch-baseline/notebook)
+- BiSeNetV2 Paper: "BiSeNet V2: Bilateral Network with Guided Aggregation for Real-time Semantic Segmentation"
+- Cityscapes Dataset: https://www.cityscapes-dataset.com/
+
+## Contributing
+
+This project is based on research in adversarial robustness and real-time segmentation for autonomous vehicles.
+
+## License
+
+See the original Kaggle notebook for licensing information.
